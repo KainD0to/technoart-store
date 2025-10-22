@@ -8,27 +8,58 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     password: '',
     name: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+  
+  try {
+    console.log('🔄 Отправка данных:', { 
+      isLogin, 
+      email: formData.email, 
+      hasPassword: !!formData.password 
+    });
     
-    try {
-      let response;
-      if (isLogin) {
-        response = await loginUser(formData);
-      } else {
-        response = await registerUser(formData);
-      }
-      
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        onLoginSuccess(response.data.user);
-        onClose();
-      }
-    } catch (error) {
-      alert(error.response?.data?.error || 'Ошибка авторизации');
+    let response;
+    if (isLogin) {
+      response = await loginUser(formData);
+    } else {
+      response = await registerUser(formData);
     }
-  };
+    
+    console.log('📨 Ответ от сервера:', response.data);
+    
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      onLoginSuccess(response.data.user);
+      onClose();
+    } else {
+      setError('Не получили токен от сервера. Ответ: ' + JSON.stringify(response.data));
+    }
+  } catch (error) {
+    console.error('❌ Ошибка запроса:', error);
+    
+    // Детальная информация об ошибке
+    if (error.response) {
+      // Сервер ответил с ошибкой
+      const status = error.response.status;
+      const data = error.response.data;
+      console.log('📊 Детали ошибки:', { status, data });
+      setError(`Ошибка ${status}: ${data.error || 'Неизвестная ошибка сервера'}`);
+    } else if (error.request) {
+      // Запрос был сделан, но ответа нет
+      setError('Нет ответа от сервера. Проверьте, запущен ли бэкенд.');
+    } else {
+      // Что-то пошло не так при настройке запроса
+      setError('Ошибка настройки запроса: ' + error.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!isOpen) return null;
 
@@ -36,6 +67,9 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     <div className="modal-overlay">
       <div className="modal">
         <h2>{isLogin ? 'Вход' : 'Регистрация'}</h2>
+        
+        {error && <div className="error-message">{error}</div>}
+        
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <input
@@ -60,7 +94,9 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
             onChange={(e) => setFormData({...formData, password: e.target.value})}
             required
           />
-          <button type="submit">{isLogin ? 'Войти' : 'Зарегистрироваться'}</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Загрузка...' : (isLogin ? 'Войти' : 'Зарегистрироваться')}
+          </button>
         </form>
         <button 
           onClick={() => setIsLogin(!isLogin)}
