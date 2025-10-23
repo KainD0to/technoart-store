@@ -36,8 +36,15 @@ app.get('/', (req, res) => {
 // Роут товаров
 app.get('/api/products', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
-    res.json(result.rows);
+    const result = await pool.query('SELECT * FROM products');
+    
+    // Гарантируем что price - число
+    const products = result.rows.map(product => ({
+      ...product,
+      price: Number(product.price) // Преобразуем в число
+    }));
+    
+    res.json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

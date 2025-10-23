@@ -2,7 +2,7 @@ export default function Header({ cartCount, user, onLoginClick, onCartClick, onL
   return (
     <header className="header">
       <div className="container">
-        <h1>🛍️ Магазин</h1>
+        <h1>🛍️ Fried by 27</h1>
         <div className="header-actions">
           <button onClick={onCartClick} className="cart-btn">
             🛒 Корзина ({cartCount})

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getProducts } from './services/api';
 import { useCart } from './context/CartContext';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
 import LoginModal from './components/LoginModal';
 import Cart from './components/Cart';
+import SearchFilters from './components/SearchFilters';
 import './App.css';
 
 function App() {
@@ -12,24 +13,29 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    category: '',
+    minPrice: '',
+    maxPrice: ''
+  });
+  const [filteredProducts, setFilteredProducts] = useState([]);
   
   const { addToCart, count, clearCart } = useCart();
 
-  // Загружаем товары и пользователя при загрузке приложения
+  // Загрузка данных
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Загружаем товары
         const response = await getProducts();
-        setProducts(response.data);
+        const productsData = response.data;
+        setProducts(productsData);
+        setFilteredProducts(productsData);
         
-        // Загружаем пользователя из localStorage
         const token = localStorage.getItem('token');
         if (token) {
           const userData = localStorage.getItem('user');
-          if (userData) {
-            setUser(JSON.parse(userData));
-          }
+          if (userData) setUser(JSON.parse(userData));
         }
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
@@ -39,24 +45,58 @@ function App() {
     loadInitialData();
   }, []);
 
-  const handleAddToCart = (product) => {
+  // Оптимизированная фильтрация
+  useEffect(() => {
+    const filtered = products.filter(product => {
+      const matchesSearch = !searchTerm || 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = !filters.category || 
+        product.category === filters.category;
+      
+      const matchesMinPrice = !filters.minPrice || 
+        product.price >= Number(filters.minPrice);
+      
+      const matchesMaxPrice = !filters.maxPrice || 
+        product.price <= Number(filters.maxPrice);
+
+      return matchesSearch && matchesCategory && matchesMinPrice && matchesMaxPrice;
+    });
+
+    setFilteredProducts(filtered);
+  }, [products, searchTerm, filters]);
+
+  // useCallback для оптимизации
+  const handleAddToCart = useCallback((product) => {
     addToCart(product);
     alert(`${product.name} добавлен в корзину!`);
-  };
+  }, [addToCart]);
 
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = useCallback((userData) => {
     setUser(userData);
     setIsLoginOpen(false);
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUser(null);
     clearCart();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    console.log('👋 Пользователь вышел из системы');
-  };
+  }, [clearCart]);
+
+  const handleSearchChange = useCallback((term) => {
+    setSearchTerm(term);
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setSearchTerm('');
+    setFilters({ category: '', minPrice: '', maxPrice: '' });
+  }, []);
 
   return (
     <div className="App">
@@ -65,13 +105,23 @@ function App() {
         user={user}
         onLoginClick={() => setIsLoginOpen(true)}
         onCartClick={() => setIsCartOpen(true)}
-        onLogoutClick={handleLogout} // Передаем функцию выхода
+        onLogoutClick={handleLogout}
       />
       
       <main className="container">
-        <h1>🛍️ Наши товары</h1>
+        <h1>🎸 Музыкальная атрибутика</h1>
+        
+        <SearchFilters
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onResetFilters={handleResetFilters}
+          productsCount={filteredProducts.length}
+        />
+        
         <div className="products-grid">
-          {products.map(product => (
+          {filteredProducts.map(product => (
             <ProductCard 
               key={product.id} 
               product={product} 
@@ -79,6 +129,12 @@ function App() {
             />
           ))}
         </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="no-products">
+            😔 Товары не найдены. Попробуйте изменить параметры поиска.
+          </div>
+        )}
       </main>
 
       <LoginModal 

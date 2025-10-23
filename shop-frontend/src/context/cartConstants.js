@@ -6,12 +6,22 @@ export const initialState = {
 };
 
 export function cartReducer(state, action) {
-  console.log('🛒 Cart reducer:', action.type, action.payload);
-  
+  console.log('🛒 Reducer called:', { 
+    action: action.type, 
+    payload: action.payload,
+    currentState: state 
+  });
+
   switch (action.type) {
     case 'ADD_ITEM': {
       const existingItem = state.items.find(item => item.id === action.payload.id);
+      const itemPrice = Number(action.payload.price) || 0;
       
+      console.log('💰 Item price:', { 
+        original: action.payload.price, 
+        converted: itemPrice 
+      });
+
       if (existingItem) {
         const updatedItems = state.items.map(item =>
           item.id === action.payload.id
@@ -19,26 +29,33 @@ export function cartReducer(state, action) {
             : item
         );
         
-        const newState = {
+        const newTotal = Number(state.total) + itemPrice;
+        
+        console.log('➕ Updated total:', { old: state.total, new: newTotal });
+        
+        return {
           ...state,
           items: updatedItems,
-          total: state.total + action.payload.price,
+          total: newTotal,
           count: state.count + 1
         };
-        
-        console.log('🛒 New state after ADD_ITEM:', newState);
-        return newState;
       } else {
-        const newItem = { ...action.payload, quantity: 1 };
-        const newState = {
+        const newItem = { 
+          ...action.payload, 
+          quantity: 1,
+          price: itemPrice
+        };
+        
+        const newTotal = Number(state.total) + itemPrice;
+        
+        console.log('🆕 New item total:', { old: state.total, new: newTotal });
+        
+        return {
           ...state,
           items: [...state.items, newItem],
-          total: state.total + action.payload.price,
+          total: newTotal,
           count: state.count + 1
         };
-        
-        console.log('🛒 New state after ADD_ITEM (new item):', newState);
-        return newState;
       }
     }
 
