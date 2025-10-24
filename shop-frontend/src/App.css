@@ -333,7 +333,7 @@ body {
 /* Products Grid */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2.5rem;
   padding: 2rem 0;
   position: relative;
@@ -620,11 +620,10 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(12, 26, 22, 0.98);
+  background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: flex-end;
   z-index: 1000;
-  backdrop-filter: blur(10px);
 }
 
 .cart {
