@@ -109,7 +109,6 @@ function App() {
       />
       
       <main className="container">
-        <h1>🎸 Музыкальная атрибутика</h1>
         
         <SearchFilters
           searchTerm={searchTerm}
